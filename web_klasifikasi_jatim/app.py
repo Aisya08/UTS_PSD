@@ -5,7 +5,6 @@ from pathlib import Path
 
 import folium
 import numpy as np
-import pandas as pd
 import rasterio
 import streamlit as st
 from folium.raster_layers import ImageOverlay
@@ -17,14 +16,14 @@ from streamlit_folium import st_folium
 
 
 # ============================================================
-# PAGE CONFIG
+# KONFIGURASI HALAMAN (SIDEBAR DIHAPUS, FOKUS PADA PETA)
 # ============================================================
 
 st.set_page_config(
-    page_title="Peta Tutupan Lahan Jatim",
+    page_title="Peta Klasifikasi Tutupan Lahan Jawa Timur",
     page_icon="🗺️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
@@ -32,58 +31,65 @@ st.markdown(
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
       html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
-      .main-title {
-        font-size: 26px;
+      
+      /* Sembunyikan sidebar kiri sepenuhnya */
+      [data-testid="stSidebar"], section[data-testid="stSidebar"] {
+        display: none !important;
+      }
+      
+      /* Hilangkan padding berlebih */
+      .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 98% !important;
+      }
+
+      .header-box {
+        background: #1e293b;
+        color: #f8fafc;
+        border-radius: 14px;
+        padding: 18px 24px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+        border: 1px solid #334155;
+      }
+      .header-title {
+        font-size: 24px;
         font-weight: 800;
-        color: #0f172a;
+        color: #ffffff;
         margin-bottom: 4px;
       }
-      .sub-title {
-        font-size: 14px;
-        color: #475569;
-        margin-bottom: 16px;
+      .header-subtitle {
+        font-size: 13.5px;
+        color: #94a3b8;
+        margin-bottom: 10px;
       }
-      .badge-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 16px;
-      }
-      .badge-item {
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #1e293b;
-      }
-      .badge-item b {
-        color: #0284c7;
-      }
-      .legend-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        background: #ffffff;
-        padding: 12px 16px;
-        border-radius: 10px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 14px;
-      }
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #334155;
-      }
-      .swatch {
-        width: 16px;
-        height: 16px;
-        border-radius: 4px;
+      .instruction-pill {
         display: inline-block;
+        background: #0284c7;
+        color: #ffffff;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+      
+      /* Styling kontrol leaflet agar tulisan terbaca jelas */
+      .leaflet-control-layers {
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #0f172a !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+        padding: 10px 14px !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .leaflet-control-layers label {
+        margin-bottom: 6px !important;
+        cursor: pointer !important;
       }
     </style>
     """,
@@ -95,55 +101,69 @@ st.markdown(
 # DEFINISI KELAS & WARNA
 # ============================================================
 
-CLASS_NAMES = {
-    1: "Building",
-    2: "Farmland",
-    3: "Water",
-    4: "Forest",
-    5: "Mangrove",
-}
-
-CLASS_LABELS_ID = {
-    1: "Perkotaan / Bangunan",
-    2: "Sawah / Pertanian",
-    3: "Badan Air / Laut",
-    4: "Hutan Daratan",
-    5: "Hutan Mangrove",
-}
-
-CLASS_COLORS = {
-    1: "#E53935",  # Merah (Building)
-    2: "#FDD835",  # Kuning (Farmland)
-    3: "#168BFF",  # Biru (Water)
-    4: "#43A047",  # Hijau (Forest)
-    5: "#8E24AA",  # Ungu (Mangrove)
-}
-
-PREFERRED_FILES = [
-    "hasil_klasifikasi_jatim_FINAL.tif",
-    "hasil_klasifikasi_jatim_mangrove_koridor_pesisir.tif",
-    "hasil_klasifikasi_jatim_mangrove_diperbaiki.tif",
-    "hasil_klasifikasi_jatim_mangrove_mndwi.tif",
-    "hasil_klasifikasi_jatim.tif",
+CLASSES = [
+    {
+        "code": 1,
+        "name_en": "Building",
+        "name_id": "Bangunan / Perkotaan",
+        "color": "#E53935",
+        "icon": "🟥",
+    },
+    {
+        "code": 2,
+        "name_en": "Farmland",
+        "name_id": "Sawah / Pertanian",
+        "color": "#FDD835",
+        "icon": "🟨",
+    },
+    {
+        "code": 3,
+        "name_en": "Water",
+        "name_id": "Badan Air / Laut",
+        "color": "#168BFF",
+        "icon": "🟦",
+    },
+    {
+        "code": 4,
+        "name_en": "Forest",
+        "name_id": "Hutan Daratan",
+        "color": "#43A047",
+        "icon": "🟩",
+    },
+    {
+        "code": 5,
+        "name_en": "Mangrove",
+        "name_id": "Hutan Mangrove",
+        "color": "#8E24AA",
+        "icon": "🟪",
+    },
 ]
+
+CLASS_BY_CODE = {c["code"]: c for c in CLASSES}
 
 
 # ============================================================
 # UTILITIES PEMBACAAN RASTER
 # ============================================================
 
-def get_local_rasters() -> list[Path]:
+def get_local_raster() -> Path | None:
     search_dirs = [Path("."), Path(__file__).resolve().parent, Path(__file__).resolve().parent.parent]
-    found = {}
+    candidates = [
+        "hasil_klasifikasi_jatim_FINAL.tif",
+        "hasil_klasifikasi_jatim_mangrove_koridor_pesisir.tif",
+        "hasil_klasifikasi_jatim_mangrove_diperbaiki.tif",
+        "hasil_klasifikasi_jatim.tif",
+    ]
+    for name in candidates:
+        for d in search_dirs:
+            p = d / name
+            if p.exists():
+                return p.resolve()
+    # Fallback to any .tif
     for d in search_dirs:
         for p in d.glob("hasil_klasifikasi_jatim*.tif"):
-            found[p.resolve()] = p
-        for p in d.glob("hasil_klasifikasi_jatim*.tiff"):
-            found[p.resolve()] = p
-    all_files = list(found.values())
-    order = {name: index for index, name in enumerate(PREFERRED_FILES)}
-    all_files.sort(key=lambda p: (order.get(p.name, 999), p.name.lower()))
-    return all_files
+            return p.resolve()
+    return None
 
 
 def read_raster_bytes(file_bytes: bytes):
@@ -190,31 +210,29 @@ def read_raster_bytes(file_bytes: bytes):
     return result, (west, south, east, north)
 
 
-def make_rgba(class_array: np.ndarray, selected_code: int | None, alpha: int = 205):
+def make_single_class_rgba(class_array: np.ndarray, code: int, alpha: int = 215):
+    """Buat layer RGBA transparan khusus untuk satu kelas tertentu."""
     rgba = np.zeros((*class_array.shape, 4), dtype=np.uint8)
-    for code, hex_color in CLASS_COLORS.items():
-        if selected_code is not None and code != selected_code:
-            continue
-        rgb = tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
-        mask = class_array == code
-        rgba[mask, 0] = rgb[0]
-        rgba[mask, 1] = rgb[1]
-        rgba[mask, 2] = rgb[2]
-        rgba[mask, 3] = alpha
+    info = CLASS_BY_CODE[code]
+    hex_color = info["color"]
+    rgb = tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    mask = class_array == code
+    rgba[mask, 0] = rgb[0]
+    rgba[mask, 1] = rgb[1]
+    rgba[mask, 2] = rgb[2]
+    rgba[mask, 3] = alpha
     return rgba
 
 
-def build_map(
+def build_leaflet_map(
     class_array: np.ndarray,
     bounds: tuple[float, float, float, float],
-    selected_code: int | None,
-    opacity: float,
-    show_geojson: bool,
     geojson_obj: dict | None,
 ):
     west, south, east, north = bounds
     center = [(south + north) / 2, (west + east) / 2]
 
+    # Inisialisasi Peta Leaflet
     m = folium.Map(
         location=center,
         zoom_start=10,
@@ -223,15 +241,17 @@ def build_map(
         prefer_canvas=True,
     )
 
+    # Basemap 1: Citra Satelit Esri (Aktif secara default)
     folium.TileLayer(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics",
+        attr="Tiles © Esri — Sentinel-2 L2A BOA",
         name="🛰️ Citra Satelit Esri",
         overlay=False,
         control=True,
         show=True,
     ).add_to(m)
 
+    # Basemap 2: Peta Jalan OpenStreetMap
     folium.TileLayer(
         tiles="OpenStreetMap",
         name="🗺️ Peta Jalan OSM",
@@ -240,185 +260,115 @@ def build_map(
         show=False,
     ).add_to(m)
 
-    rgba = make_rgba(class_array, selected_code, alpha=210)
-    layer_name = "Hasil Klasifikasi (Semua Kelas)" if selected_code is None else f"Hasil Klasifikasi ({CLASS_LABELS_ID.get(selected_code)})"
+    # Tambahkan masing-masing dari 5 kelas sebagai LAYER CHECKLIST INDEPENDEN
+    for item in CLASSES:
+        code = item["code"]
+        name_id = item["name_id"]
+        icon = item["icon"]
+        rgba = make_single_class_rgba(class_array, code=code, alpha=215)
+        layer_label = f"{icon} {name_id}"
 
-    ImageOverlay(
-        image=rgba,
-        bounds=[[south, west], [north, east]],
-        origin="upper",
-        opacity=opacity,
-        name=layer_name,
-        overlay=True,
-        control=True,
-        interactive=False,
-        pixelated=True,
-        cross_origin=False,
-    ).add_to(m)
+        ImageOverlay(
+            image=rgba,
+            bounds=[[south, west], [north, east]],
+            origin="upper",
+            opacity=0.88,
+            name=layer_label,
+            overlay=True,
+            control=True,
+            show=True,  # Semua kelas dicentang secara default, bisa di-uncheck sesuka hati
+            interactive=False,
+            pixelated=True,
+        ).add_to(m)
 
-    if show_geojson and geojson_obj:
+    # Tambahkan Layer Poligon Training GeoJSON (Default tidak dicentang)
+    if geojson_obj:
         def style_feature(feature):
             props = feature.get("properties") or {}
             label = str(props.get("class", props.get("Class", ""))).strip().lower()
-            code = None
-            for candidate_code, candidate_name in CLASS_NAMES.items():
-                if label == candidate_name.lower():
-                    code = candidate_code
+            color = "#FFFFFF"
+            for item in CLASSES:
+                if label == item["name_en"].lower():
+                    color = item["color"]
                     break
-            color = CLASS_COLORS.get(code, "#FFFFFF")
             return {
                 "color": color,
                 "weight": 2.5,
-                "opacity": 0.95,
+                "opacity": 1.0,
                 "fillColor": color,
-                "fillOpacity": 0.12,
+                "fillOpacity": 0.15,
             }
 
         folium.GeoJson(
             geojson_obj,
-            name="📍 Poligon Training GeoJSON (ROI)",
+            name="📍 Poligon Training ROI (Digitasi)",
             style_function=style_feature,
-            tooltip=folium.GeoJsonTooltip(fields=["class"], aliases=["Kelas ROI:"]) if all("class" in (f.get("properties") or {}) for f in geojson_obj.get("features", [])) else None,
+            show=False,
+            tooltip=folium.GeoJsonTooltip(fields=["class"], aliases=["Kelas:"]) if any("class" in (f.get("properties") or {}) for f in geojson_obj.get("features", [])) else None,
         ).add_to(m)
 
+    # Layer Control di pojok kanan atas (Terbuka permanen agar checklist langsung terlihat)
     folium.LayerControl(collapsed=False, position="topright").add_to(m)
     m.fit_bounds([[south, west], [north, east]])
     return m
 
 
 # ============================================================
-# LOAD FILE RASTER & GEOJSON
+# PEMUATAN DATA
 # ============================================================
 
-local_rasters = get_local_rasters()
+raster_path = get_local_raster()
+
 local_geojson_candidates = [
     Path("training_jatim_mangrove_diperkecil_clean.geojson"),
     Path(__file__).resolve().parent / "training_jatim_mangrove_diperkecil_clean.geojson",
     Path(__file__).resolve().parent.parent / "training_jatim_mangrove_diperkecil_clean.geojson",
 ]
 local_geojson = next((p for p in local_geojson_candidates if p.exists()), None)
-
-
-# ============================================================
-# SIDEBAR KONTROL
-# ============================================================
-
-st.sidebar.markdown("### ⚙️ Kontrol Peta")
-
-raster_bytes = None
-raster_label = None
-
-if local_rasters:
-    selected_path = local_rasters[0]
-    raster_bytes = selected_path.read_bytes()
-    raster_label = selected_path.name
-    st.sidebar.success(f"File aktif: **{raster_label}**")
-else:
-    uploaded_raster = st.sidebar.file_uploader("Unggah GeoTIFF", type=["tif", "tiff"])
-    if uploaded_raster:
-        raster_bytes = uploaded_raster.getvalue()
-        raster_label = uploaded_raster.name
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("#### 🎯 Filter Kelas Tutupan Lahan")
-
-filter_options = {
-    "Tampilkan Semua Kelas": None,
-    "1. Perkotaan / Bangunan (Merah)": 1,
-    "2. Sawah / Pertanian (Kuning)": 2,
-    "3. Badan Air / Laut (Biru)": 3,
-    "4. Hutan Daratan (Hijau)": 4,
-    "5. Hutan Mangrove (Ungu)": 5,
-}
-
-selected_filter_label = st.sidebar.selectbox(
-    "Pilih kelas untuk difilter:",
-    options=list(filter_options.keys()),
-    index=0,
-)
-selected_code = filter_options[selected_filter_label]
-
-opacity = st.sidebar.slider(
-    "Transparansi Layer (%)",
-    min_value=0.1,
-    max_value=1.0,
-    value=0.85,
-    step=0.05,
-)
-
-show_geojson = st.sidebar.checkbox("Tampilkan Poligon Training (ROI)", value=False)
 geojson_obj = None
-if show_geojson and local_geojson:
+if local_geojson:
     try:
         geojson_obj = json.loads(local_geojson.read_text(encoding="utf-8"))
     except Exception:
         pass
 
-st.sidebar.markdown("---")
-if raster_bytes:
-    st.sidebar.download_button(
-        "⬇️ Unduh Berkas GeoTIFF",
-        data=raster_bytes,
-        file_name=raster_label or "hasil_klasifikasi.tif",
-        mime="image/tiff",
-        use_container_width=True,
-    )
-
 
 # ============================================================
-# TAMPILAN UTAMA (FOKUS PADA PETA)
+# TAMPILAN ANTARMUKA UTAMA
 # ============================================================
 
-st.markdown('<div class="main-title">🗺️ Peta Klasifikasi Tutupan Lahan Jawa Timur</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Hasil Prediksi Citra Satelit Sentinel-2 L2A Berbasis Random Forest Classifier (Akurasi Uji: 92,76%)</div>', unsafe_allow_html=True)
-
-# Badge info metrik
 st.markdown(
     """
-    <div class="badge-bar">
-      <div class="badge-item">🎯 Akurasi Uji: <b>92,76%</b></div>
-      <div class="badge-item">📊 Total Piksel: <b>1.186.250 Piksel</b></div>
-      <div class="badge-item">📐 Resolusi: <b>~47,5 Meter / Piksel</b></div>
-      <div class="badge-item">📍 Lokasi: <b>Banyuwangi & Sekitarnya</b></div>
+    <div class="header-box">
+      <div class="header-title">🗺️ Peta Klasifikasi Tutupan Lahan Jawa Timur</div>
+      <div class="header-subtitle">
+        Citra Satelit Sentinel-2 L2A & Algoritma Random Forest Classifier · Akurasi Uji: 92,76% · Wilayah Banyuwangi & Sekitarnya
+      </div>
+      <div class="instruction-pill">
+        👉 Gunakan kotak checklist di pojok kanan atas peta untuk mencentang / mematikan kelas (Sawah, Bangunan, Hutan, Mangrove, Air)
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# Legenda Horizontal di atas peta
-st.markdown(
-    f"""
-    <div class="legend-container">
-      <div class="legend-item"><span class="swatch" style="background:{CLASS_COLORS[1]}"></span> Bangunan / Perkotaan</div>
-      <div class="legend-item"><span class="swatch" style="background:{CLASS_COLORS[2]}"></span> Sawah / Pertanian</div>
-      <div class="legend-item"><span class="swatch" style="background:{CLASS_COLORS[3]}"></span> Air / Laut</div>
-      <div class="legend-item"><span class="swatch" style="background:{CLASS_COLORS[4]}"></span> Hutan Daratan</div>
-      <div class="legend-item"><span class="swatch" style="background:{CLASS_COLORS[5]}"></span> Hutan Mangrove</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+if raster_path and raster_path.exists():
+    raster_bytes = raster_path.read_bytes()
+    class_array, raster_bounds = read_raster_bytes(raster_bytes)
 
-# TAMPILKAN PETA INTERAKTIF
-if raster_bytes:
-    try:
-        class_array, raster_bounds = read_raster_bytes(raster_bytes)
-        m = build_map(
-            class_array=class_array,
-            bounds=raster_bounds,
-            selected_code=selected_code,
-            opacity=opacity,
-            show_geojson=show_geojson,
-            geojson_obj=geojson_obj,
-        )
-        st_folium(
-            m,
-            height=660,
-            use_container_width=True,
-            returned_objects=[],
-            key="map_full",
-        )
-    except Exception as e:
-        st.error(f"Gagal memuat peta: {e}")
+    # Bangun dan render peta Leaflet interaktif
+    folium_map = build_leaflet_map(
+        class_array=class_array,
+        bounds=raster_bounds,
+        geojson_obj=geojson_obj,
+    )
+
+    st_folium(
+        folium_map,
+        height=720,
+        use_container_width=True,
+        returned_objects=[],
+        key="leaflet_classification_map",
+    )
 else:
-    st.warning("Raster klasifikasi belum ditemukan.")
+    st.error("File raster hasil_klasifikasi_jatim_FINAL.tif tidak ditemukan di repositori.")
