@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Peta klasifikasi tutupan lahan Jawa Timur berdasarkan citra satelit Sentinel-2 dan Random Forest.">
+  <title>Jatim LandCover Map - Klasifikasi Tutupan Lahan Jawa Timur</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+
+    <!-- Top Header Bar -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+            <line x1="9" y1="3" x2="9" y2="18"></line>
+            <line x1="15" y1="6" x2="15" y2="21"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">Jatim LandCover Map</h1>
+          <p class="brand-subtitle">Peta klasifikasi tutupan lahan Jawa Timur berdasarkan citra satelit Sentinel-2.</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-recenter" class="btn-header" title="Pusatkan Peta ke Wilayah Klasifikasi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Fokus Wilayah</span>
+        </button>
+        <button id="btn-toggle-panel" class="btn-header btn-icon-only" title="Sembunyikan / Tampilkan Panel Kontrol" aria-label="Toggle Panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Map Viewport -->
+    <div id="map" class="map-viewport"></div>
+
+    <!-- Floating Control & Legend Panel -->
+    <aside id="control-panel" class="floating-panel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span class="panel-badge">Kontrol Lapisan</span>
+          <h2 class="panel-title">Kategori Tutupan Lahan</h2>
+        </div>
+        <button id="btn-close-panel" class="btn-close" aria-label="Tutup panel">✕</button>
+      </div>
+
+      <div class="panel-content">
+        <!-- Quick Select Buttons -->
+        <div class="quick-actions">
+          <button id="btn-select-all" class="btn-pill">Pilih Semua</button>
+          <button id="btn-clear-all" class="btn-pill btn-pill-outline">Sembunyikan Semua</button>
+        </div>
+
+        <!-- 5 Category Checkboxes -->
+        <div class="categories-list">
+
+          <!-- 1. Building -->
+          <label class="category-item" for="chk-building">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="chk-building" value="building" checked>
+              <span class="custom-checkbox color-building"></span>
+            </div>
+            <div class="category-info">
+              <div class="category-name-row">
+                <span class="color-badge badge-building"></span>
+                <span class="category-name">Perkotaan / Lahan Terbangun</span>
+              </div>
+              <span class="category-sub">Building • Merah</span>
+            </div>
+          </label>
+
+          <!-- 2. Farmland -->
+          <label class="category-item" for="chk-farmland">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="chk-farmland" value="farmland" checked>
+              <span class="custom-checkbox color-farmland"></span>
+            </div>
+            <div class="category-info">
+              <div class="category-name-row">
+                <span class="color-badge badge-farmland"></span>
+                <span class="category-name">Sawah / Lahan Pertanian</span>
+              </div>
+              <span class="category-sub">Farmland • Kuning</span>
+            </div>
+          </label>
+
+          <!-- 3. Water -->
+          <label class="category-item" for="chk-water">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="chk-water" value="water" checked>
+              <span class="custom-checkbox color-water"></span>
+            </div>
+            <div class="category-info">
+              <div class="category-name-row">
+                <span class="color-badge badge-water"></span>
+                <span class="category-name">Perairan</span>
+              </div>
+              <span class="category-sub">Water • Biru</span>
+            </div>
+          </label>
+
+          <!-- 4. Forest -->
+          <label class="category-item" for="chk-forest">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="chk-forest" value="forest" checked>
+              <span class="custom-checkbox color-forest"></span>
+            </div>
+            <div class="category-info">
+              <div class="category-name-row">
+                <span class="color-badge badge-forest"></span>
+                <span class="category-name">Hutan</span>
+              </div>
+              <span class="category-sub">Forest • Hijau</span>
+            </div>
+          </label>
+
+          <!-- 5. Mangrove -->
+          <label class="category-item" for="chk-mangrove">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="chk-mangrove" value="mangrove" checked>
+              <span class="custom-checkbox color-mangrove"></span>
+            </div>
+            <div class="category-info">
+              <div class="category-name-row">
+                <span class="color-badge badge-mangrove"></span>
+                <span class="category-name">Hutan Mangrove</span>
+              </div>
+              <span class="category-sub">Mangrove • Ungu</span>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- Opacity Slider Control -->
+        <div class="slider-section">
+          <div class="slider-header">
+            <label for="layer-opacity" class="slider-label">Transparansi Overlay</label>
+            <span id="opacity-value" class="slider-value">85%</span>
+          </div>
+          <input type="range" id="layer-opacity" min="10" max="100" value="85" class="range-slider">
+        </div>
+
+        <!-- Basemap Selection -->
+        <div class="basemap-section">
+          <label class="section-subtitle">Pilihan Peta Dasar (Basemap)</label>
+          <div class="basemap-options">
+            <label class="basemap-radio">
+              <input type="radio" name="basemap" value="esri-sat" checked>
+              <span>Satelit (Esri World Imagery)</span>
+            </label>
+            <label class="basemap-radio">
+              <input type="radio" name="basemap" value="esri-clarity">
+              <span>Satelit + Label Batas</span>
+            </label>
+            <label class="basemap-radio">
+              <input type="radio" name="basemap" value="osm">
+              <span>OpenStreetMap</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Info Footer inside Panel -->
+        <div class="panel-footer-info">
+          <div class="info-row">
+            <span class="info-label">Model:</span>
+            <span class="info-val">Random Forest</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Sumber:</span>
+            <span class="info-val">Sentinel-2 L2A</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">CRS:</span>
+            <span class="info-val">WGS 84 (EPSG:4326)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Floating Map Coordinates / Zoom Indicator -->
+    <div id="map-coordinates" class="map-coordinates">
+      Lat: -8.4000 | Lon: 114.1419 | Zoom: 11
+    </div>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- App Script -->
+  <script src="script.js"></script>
+</body>
+</html>

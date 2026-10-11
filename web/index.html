@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="WebGIS Interaktif Klasifikasi Tutupan Lahan Jawa Timur (Banyuwangi) berbasis Citra Satelit Sentinel-2 L2A dan Algoritma Random Forest.">
+  <meta name="author" content="Tim Peneliti Sains Data Geospasial">
+  <title>WebGIS Tutupan Lahan Jawa Timur | Sentinel-2 & Random Forest</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="app-layout">
+
+    <!-- Top Navigation Header -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <div class="logo-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+            <line x1="9" y1="3" x2="9" y2="18"></line>
+            <line x1="15" y1="6" x2="15" y2="21"></line>
+          </svg>
+        </div>
+        <div class="header-titles">
+          <h1 class="header-title">WebGIS Tutupan Lahan Jawa Timur</h1>
+          <p class="header-sub">Wilayah Banyuwangi &bull; Sentinel-2 L2A &bull; Random Forest (Akurasi Uji: 92,76%)</p>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button id="btn-recenter" class="btn-action" title="Fokuskan Peta ke Cakupan Wilayah">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+            <line x1="12" y1="2" x2="12" y2="5"></line>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+            <line x1="2" y1="12" x2="5" y2="12"></line>
+            <line x1="19" y1="12" x2="22" y2="12"></line>
+          </svg>
+          <span>Fokus Wilayah</span>
+        </button>
+
+        <button id="btn-toggle-sidebar" class="btn-action btn-menu" title="Buka/Tutup Panel Kontrol" aria-label="Toggle Panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+          </svg>
+          <span class="btn-text-hide">Panel Kontrol</span>
+        </button>
+
+        <button id="btn-info-modal" class="btn-action btn-secondary" title="Tentang Metodologi & Proyek">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Tentang</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+
+      <!-- Map Viewport -->
+      <main id="map" class="map-container"></main>
+
+      <!-- Sidebar / Floating Control Panel -->
+      <aside id="sidebar-panel" class="sidebar-panel">
+        
+        <!-- Panel Navigation Tabs -->
+        <div class="panel-tabs">
+          <button class="tab-btn active" data-tab="tab-layers">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            Lapisan
+          </button>
+          <button class="tab-btn" data-tab="tab-stats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            Statistik
+          </button>
+          <button class="tab-btn" data-tab="tab-metadata">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            Metadata
+          </button>
+        </div>
+
+        <!-- Tab 1: Lapisan & Visualisasi -->
+        <div id="tab-layers" class="tab-content active">
+          
+          <div class="section-block">
+            <div class="section-header-row">
+              <h2 class="section-title">Kategori Tutupan Lahan</h2>
+              <span class="badge-count">5 Kelas</span>
+            </div>
+            <p class="section-desc">Aktifkan atau nonaktifkan lapisan raster klasifikasi secara independen:</p>
+
+            <div class="batch-buttons">
+              <button id="btn-check-all" class="btn-micro">Pilih Semua</button>
+              <button id="btn-uncheck-all" class="btn-micro btn-micro-outline">Sembunyikan Semua</button>
+            </div>
+
+            <div class="layer-list">
+              <!-- Building -->
+              <label class="layer-card" for="layer-building">
+                <input type="checkbox" id="layer-building" value="building" checked>
+                <span class="checkbox-indicator color-building"></span>
+                <div class="layer-meta">
+                  <div class="layer-title-line">
+                    <span class="color-dot dot-building"></span>
+                    <span class="layer-label">Perkotaan / Terbangun</span>
+                  </div>
+                  <div class="layer-details">
+                    <span>Building &bull; 97.391 px</span>
+                    <strong class="pct-tag">8,21%</strong>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Farmland -->
+              <label class="layer-card" for="layer-farmland">
+                <input type="checkbox" id="layer-farmland" value="farmland" checked>
+                <span class="checkbox-indicator color-farmland"></span>
+                <div class="layer-meta">
+                  <div class="layer-title-line">
+                    <span class="color-dot dot-farmland"></span>
+                    <span class="layer-label">Sawah / Pertanian</span>
+                  </div>
+                  <div class="layer-details">
+                    <span>Farmland &bull; 440.701 px</span>
+                    <strong class="pct-tag">37,15%</strong>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Water -->
+              <label class="layer-card" for="layer-water">
+                <input type="checkbox" id="layer-water" value="water" checked>
+                <span class="checkbox-indicator color-water"></span>
+                <div class="layer-meta">
+                  <div class="layer-title-line">
+                    <span class="color-dot dot-water"></span>
+                    <span class="layer-label">Badan Air / Perairan</span>
+                  </div>
+                  <div class="layer-details">
+                    <span>Water &bull; 106.089 px</span>
+                    <strong class="pct-tag">8,94%</strong>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Forest -->
+              <label class="layer-card" for="layer-forest">
+                <input type="checkbox" id="layer-forest" value="forest" checked>
+                <span class="checkbox-indicator color-forest"></span>
+                <div class="layer-meta">
+                  <div class="layer-title-line">
+                    <span class="color-dot dot-forest"></span>
+                    <span class="layer-label">Hutan Tropis / Pegunungan</span>
+                  </div>
+                  <div class="layer-details">
+                    <span>Forest &bull; 536.945 px</span>
+                    <strong class="pct-tag">45,26%</strong>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Mangrove -->
+              <label class="layer-card" for="layer-mangrove">
+                <input type="checkbox" id="layer-mangrove" value="mangrove" checked>
+                <span class="checkbox-indicator color-mangrove"></span>
+                <div class="layer-meta">
+                  <div class="layer-title-line">
+                    <span class="color-dot dot-mangrove"></span>
+                    <span class="layer-label">Hutan Mangrove</span>
+                  </div>
+                  <div class="layer-details">
+                    <span>Mangrove &bull; 5.124 px</span>
+                    <strong class="pct-tag">0,43%</strong>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Training Polygons ROI Layer -->
+          <div class="section-block">
+            <h2 class="section-title">Data Vektor Tambahan</h2>
+            <label class="layer-card" for="toggle-roi">
+              <input type="checkbox" id="toggle-roi" value="roi">
+              <span class="checkbox-indicator color-roi"></span>
+              <div class="layer-meta">
+                <div class="layer-title-line">
+                  <span class="color-dot dot-roi"></span>
+                  <span class="layer-label">Poligon Sampel Training (ROI)</span>
+                </div>
+                <div class="layer-details">
+                  <span>60 Poligon GeoJSON acuan latih</span>
+                  <strong class="pct-tag">Vektor</strong>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Opacity Slider -->
+          <div class="section-block">
+            <div class="slider-row-header">
+              <label for="slider-opacity" class="section-title">Transparansi Lapisan Raster</label>
+              <span id="label-opacity-val" class="slider-val-badge">85%</span>
+            </div>
+            <input type="range" id="slider-opacity" min="10" max="100" value="85" class="slider-range">
+            <div class="slider-ticks">
+              <span>10% Transparan</span>
+              <span>100% Solid</span>
+            </div>
+          </div>
+
+          <!-- Basemap Options -->
+          <div class="section-block">
+            <h2 class="section-title">Peta Dasar (Basemap)</h2>
+            <div class="basemap-grid">
+              <label class="basemap-pill">
+                <input type="radio" name="basemap-choice" value="esri-sat" checked>
+                <span>🛰️ Esri Citra Satelit</span>
+              </label>
+              <label class="basemap-pill">
+                <input type="radio" name="basemap-choice" value="esri-labeled">
+                <span>🗺️ Satelit + Label Batas</span>
+              </label>
+              <label class="basemap-pill">
+                <input type="radio" name="basemap-choice" value="osm">
+                <span>🌐 OpenStreetMap</span>
+              </label>
+              <label class="basemap-pill">
+                <input type="radio" name="basemap-choice" value="carto-dark">
+                <span>🌙 Carto Dark Matter</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tab 2: Statistik Hasil Klasifikasi -->
+        <div id="tab-stats" class="tab-content">
+          
+          <div class="section-block">
+            <h2 class="section-title">Ringkasan Evaluasi Model</h2>
+            <div class="kpi-grid">
+              <div class="kpi-box">
+                <span class="kpi-label">Overall Accuracy</span>
+                <strong class="kpi-num highlight-num">92,76%</strong>
+                <span class="kpi-sub">Data Uji (152 piksel)</span>
+              </div>
+              <div class="kpi-box">
+                <span class="kpi-label">Total Piksel Scene</span>
+                <strong class="kpi-num">1.186.250</strong>
+                <span class="kpi-sub">1.250 &times; 949 grid</span>
+              </div>
+              <div class="kpi-box">
+                <span class="kpi-label">Luas Estimasi Wilayah</span>
+                <strong class="kpi-num">&asymp; 2.683 km&sup2;</strong>
+                <span class="kpi-sub">&asymp; 268.300 Hektar</span>
+              </div>
+              <div class="kpi-box">
+                <span class="kpi-label">Resolusi Spasial Efektif</span>
+                <strong class="kpi-num">&asymp; 47,5 m</strong>
+                <span class="kpi-sub">0,224 ha per piksel</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <h2 class="section-title">Distribusi Luasan Tutupan Lahan</h2>
+            <p class="section-desc">Berdasarkan raster harmonisasi final (<code>hasil_klasifikasi_jatim_FINAL.tif</code>):</p>
+            
+            <table class="academic-table">
+              <thead>
+                <tr>
+                  <th>Kelas</th>
+                  <th>Jumlah Piksel</th>
+                  <th>Proporsi</th>
+                  <th>Estimasi Luas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="color-dot dot-forest"></span> Hutan (Forest)</td>
+                  <td>536.945 px</td>
+                  <td><strong>45,26%</strong></td>
+                  <td>&asymp; 1.204,4 km&sup2;</td>
+                </tr>
+                <tr>
+                  <td><span class="color-dot dot-farmland"></span> Sawah (Farmland)</td>
+                  <td>440.701 px</td>
+                  <td><strong>37,15%</strong></td>
+                  <td>&asymp; 988,5 km&sup2;</td>
+                </tr>
+                <tr>
+                  <td><span class="color-dot dot-water"></span> Perairan (Water)</td>
+                  <td>106.089 px</td>
+                  <td><strong>8,94%</strong></td>
+                  <td>&asymp; 238,0 km&sup2;</td>
+                </tr>
+                <tr>
+                  <td><span class="color-dot dot-building"></span> Perkotaan (Building)</td>
+                  <td>97.391 px</td>
+                  <td><strong>8,21%</strong></td>
+                  <td>&asymp; 218,4 km&sup2;</td>
+                </tr>
+                <tr>
+                  <td><span class="color-dot dot-mangrove"></span> Mangrove</td>
+                  <td>5.124 px</td>
+                  <td><strong>0,43%</strong></td>
+                  <td>&asymp; 11,5 km&sup2;</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>Total Cakupan</th>
+                  <th>1.186.250 px</th>
+                  <th>100,00%</th>
+                  <th>&asymp; 2.660,8 km&sup2;</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="section-block">
+            <h2 class="section-title">Tingkat Kepentingan Fitur (Gini)</h2>
+            <div class="feature-bar-list">
+              <div class="feature-item">
+                <div class="feature-info">
+                  <span><strong>B11 (SWIR-1 / 1610 nm)</strong> &bull; Respon kelembapan & kedap air</span>
+                  <strong>33,81%</strong>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width: 33.81%;"></div></div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-info">
+                  <span><strong>B8A (Narrow NIR / 865 nm)</strong> &bull; Kerapatan sel kanopi daun</span>
+                  <strong>33,40%</strong>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width: 33.40%;"></div></div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-info">
+                  <span><strong>B04 (Red / 665 nm)</strong> &bull; Absorpsi klorofil</span>
+                  <strong>16,58%</strong>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width: 16.58%;"></div></div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-info">
+                  <span><strong>B08 (Broad NIR / 842 nm)</strong> &bull; Biomassa kanopi</span>
+                  <strong>16,22%</strong>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width: 16.22%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tab 3: Metadata Citra & Wilayah -->
+        <div id="tab-metadata" class="tab-content">
+          
+          <div class="section-block">
+            <h2 class="section-title">Parameter Citra Satelit</h2>
+            <div class="meta-kv-grid">
+              <div class="meta-kv"><span class="k">Misi Satelit</span><span class="v">Sentinel-2 (Copernicus ESA)</span></div>
+              <div class="meta-kv"><span class="k">Sensor Spektral</span><span class="v">MultiSpectral Instrument (MSI)</span></div>
+              <div class="meta-kv"><span class="k">Tingkat Pemrosesan</span><span class="v">Level-2A (BOA Surface Reflectance)</span></div>
+              <div class="meta-kv"><span class="k">Tanggal Akuisisi</span><span class="v">6 Oktober 2026</span></div>
+              <div class="meta-kv"><span class="k">Sistem Koordinat</span><span class="v">WGS 84 (EPSG:4326)</span></div>
+              <div class="meta-kv"><span class="k">Dimensi Raster</span><span class="v">1.250 Kolom &times; 949 Baris</span></div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <h2 class="section-title">Batas Geografis (Bounding Box)</h2>
+            <div class="bbox-box">
+              <div class="bbox-item"><strong>Utara (North):</strong> -8,1971798&deg; S (Gunung Ijen / Wongsorejo)</div>
+              <div class="bbox-item"><strong>Selatan (South):</strong> -8,6024119&deg; S (Samudra Hindia / Alas Purwo)</div>
+              <div class="bbox-item"><strong>Barat (West):</strong> 113,8721975&deg; E (Gunung Raung / Meru Betiri)</div>
+              <div class="bbox-item"><strong>Timur (East):</strong> 114,4115945&deg; E (Perairan Selat Bali)</div>
+              <div class="bbox-item"><strong>Pusat (Center):</strong> -8,3997959&deg; S, 114,1418960&deg; E</div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <h2 class="section-title">Pipeline Pascaklasifikasi</h2>
+            <div class="pipeline-list">
+              <div class="pipe-step">
+                <span class="step-num">1</span>
+                <div><strong>Eliminasi Bangunan di Laut</strong> (<code>14</code> & <code>16</code>) via MNDWI &amp; mask laut terhubung tepi citra (*edge-connected sea mask*).</div>
+              </div>
+              <div class="pipe-step">
+                <span class="step-num">2</span>
+                <div><strong>Pembatasan Mangrove</strong> (<code>13</code>) ke habitat pesisir alami Teluk Pangpang.</div>
+              </div>
+              <div class="pipe-step">
+                <span class="step-num">3</span>
+                <div><strong>Restorasi Hutan Pegunungan Barat</strong> (<code>19</code>) berbasis kurva kontur geomorfologis (*foothill curve*) untuk membersihkan anomali awan kumulus &amp; bayangan relief.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- Floating Coordinate & Zoom Indicator Tooltip -->
+    <div id="coord-bar" class="coord-bar">
+      <span>Lat: <strong id="val-lat">-8.4000</strong></span>
+      <span>Lon: <strong id="val-lon">114.1419</strong></span>
+      <span>Zoom: <strong id="val-zoom">10</strong></span>
+    </div>
+
+    <!-- Modal Dialog: Tentang Proyek -->
+    <div id="info-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Tentang Proyek WebGIS Tutupan Lahan</h3>
+          <button id="btn-close-modal" class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Platform ini merupakan antarmuka WebGIS interaktif berbasis <strong>Leaflet.js</strong> untuk memvisualisasikan hasil klasifikasi tutupan lahan di wilayah Kabupaten Banyuwangi dan sekitarnya (Jawa Timur) menggunakan citra satelit <strong>Sentinel-2 Level-2A</strong> dan algoritma <strong>Random Forest Classifier</strong>.
+          </p>
+          <h4>Fitur Utama Antarmuka:</h4>
+          <ul>
+            <li><strong>5 Lapisan Mandiri:</strong> Pengguna dapat mencentang atau menyembunyikan kelas Perkotaan, Sawah, Perairan, Hutan, dan Mangrove secara bebas.</li>
+            <li><strong>Overlay Vektor ROI:</strong> Memvisualisasikan 60 poligon sampel training asli yang digunakan dalam ekstraksi piksel.</li>
+            <li><strong>Slider Transparansi:</strong> Menyelaraskan hasil klasifikasi langsung dengan citra satelit permukaan di bawahnya.</li>
+            <li><strong>Multibasemap:</strong> Pilihan antara citra satelit Esri, peta jalan OpenStreetMap, dan Carto Dark Matter.</li>
+          </ul>
+          <p class="modal-note">
+            <em>Catatan Ilmiah:</em> Raster akhir dihasilkan melalui serangkaian eksperimen harmonisasi pascaklasifikasi guna membersihkan artefak spektral (seperti bayangan awan pegunungan dan sun-glint perairan laut) tanpa mengubah poligon training awal.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Application Logic -->
+  <script src="js/app.js"></script>
+
+</body>
+</html>

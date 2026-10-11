@@ -1,0 +1,69 @@
+{
+  "source_file": "hasil_klasifikasi_jatim_FINAL.tif",
+  "crs": "EPSG:4326",
+  "dimensions": {
+    "width": 1250,
+    "height": 949
+  },
+  "bounds": [
+    [
+      -8.6024119,
+      113.8721975
+    ],
+    [
+      -8.1971798,
+      114.4115945
+    ]
+  ],
+  "center": [
+    -8.39979585,
+    114.141896
+  ],
+  "classes": {
+    "building": {
+      "code": 1,
+      "name": "Perkotaan / Lahan Terbangun",
+      "en": "Building",
+      "color": "#E53935",
+      "file": "building.png",
+      "pixels": 97391,
+      "percentage": 8.21
+    },
+    "farmland": {
+      "code": 2,
+      "name": "Sawah / Lahan Pertanian",
+      "en": "Farmland",
+      "color": "#FBC02D",
+      "file": "farmland.png",
+      "pixels": 440701,
+      "percentage": 37.15
+    },
+    "water": {
+      "code": 3,
+      "name": "Perairan",
+      "en": "Water",
+      "color": "#1E88E5",
+      "file": "water.png",
+      "pixels": 106089,
+      "percentage": 8.94
+    },
+    "forest": {
+      "code": 4,
+      "name": "Hutan",
+      "en": "Forest",
+      "color": "#2E7D32",
+      "file": "forest.png",
+      "pixels": 536945,
+      "percentage": 45.26
+    },
+    "mangrove": {
+      "code": 5,
+      "name": "Hutan Mangrove",
+      "en": "Mangrove",
+      "color": "#8E24AA",
+      "file": "mangrove.png",
+      "pixels": 5124,
+      "percentage": 0.43
+    }
+  }
+}
