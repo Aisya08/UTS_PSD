@@ -349,6 +349,19 @@ def build_leaflet_map(
             pixelated=True,
         ).add_to(m)
 
+    # Kotakan Batas Wilayah Kajian Banyuwangi (Bounding Box Garis Putus-Putus Kontras)
+    bbox_group = folium.FeatureGroup(name="🔲 Kotak Wilayah Banyuwangi", show=True)
+    folium.Rectangle(
+        bounds=[[south, west], [north, east]],
+        color="#f43f5e",
+        weight=3.5,
+        dash_array="10, 6",
+        fill=False,
+        tooltip="📍 Kotak Batas Wilayah Kajian: Banyuwangi & Sekitarnya (~2.683 km²)",
+        popup="<b>Batas Wilayah Kajian</b><br>Kabupaten Banyuwangi dan Sekitarnya<br>Citra Sentinel-2 L2A (1.186.250 Piksel)",
+    ).add_to(bbox_group)
+    bbox_group.add_to(m)
+
     # Layer Control di pojok kanan atas (Terbuka permanen)
     folium.LayerControl(collapsed=False, position="topright").add_to(m)
     m.fit_bounds([[south, west], [north, east]])
