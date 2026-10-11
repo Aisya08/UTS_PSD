@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import folium
@@ -16,7 +15,7 @@ from streamlit_folium import st_folium
 
 
 # ============================================================
-# KONFIGURASI HALAMAN (SIDEBAR DIHAPUS, FOKUS PADA PETA)
+# KONFIGURASI HALAMAN (FULLSCREEN PETA, SIDEBAR DIHAPUS)
 # ============================================================
 
 st.set_page_config(
@@ -30,66 +29,28 @@ st.markdown(
     """
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-      html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+      html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
       
       /* Sembunyikan sidebar kiri sepenuhnya */
       [data-testid="stSidebar"], section[data-testid="stSidebar"] {
         display: none !important;
       }
       
-      /* Hilangkan padding berlebih */
+      /* Hilangkan margin dan padding atas agar peta langsung tampil penuh */
       .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 98% !important;
-      }
-
-      .header-box {
-        background: #1e293b;
-        color: #f8fafc;
-        border-radius: 14px;
-        padding: 18px 24px;
-        margin-bottom: 14px;
-        box-shadow: 0 4px 18px rgba(0,0,0,0.18);
-        border: 1px solid #334155;
-      }
-      .header-title {
-        font-size: 24px;
-        font-weight: 800;
-        color: #ffffff;
-        margin-bottom: 4px;
-      }
-      .header-subtitle {
-        font-size: 13.5px;
-        color: #94a3b8;
-        margin-bottom: 10px;
-      }
-      .instruction-pill {
-        display: inline-block;
-        background: #0284c7;
-        color: #ffffff;
-        padding: 4px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 700;
-        margin-top: 4px;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        max-width: 100% !important;
       }
       
-      /* Styling kontrol leaflet agar tulisan terbaca jelas */
-      .leaflet-control-layers {
-        background: rgba(255, 255, 255, 0.95) !important;
-        color: #0f172a !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-        padding: 10px 14px !important;
-        border: 1px solid #cbd5e1 !important;
-      }
-      .leaflet-control-layers label {
-        margin-bottom: 6px !important;
-        cursor: pointer !important;
+      /* Sembunyikan header default streamlit yang tidak perlu */
+      header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: 1.5rem !important;
       }
     </style>
     """,
@@ -159,7 +120,6 @@ def get_local_raster() -> Path | None:
             p = d / name
             if p.exists():
                 return p.resolve()
-    # Fallback to any .tif
     for d in search_dirs:
         for p in d.glob("hasil_klasifikasi_jatim*.tif"):
             return p.resolve()
@@ -211,7 +171,6 @@ def read_raster_bytes(file_bytes: bytes):
 
 
 def make_single_class_rgba(class_array: np.ndarray, code: int, alpha: int = 215):
-    """Buat layer RGBA transparan khusus untuk satu kelas tertentu."""
     rgba = np.zeros((*class_array.shape, 4), dtype=np.uint8)
     info = CLASS_BY_CODE[code]
     hex_color = info["color"]
@@ -227,12 +186,10 @@ def make_single_class_rgba(class_array: np.ndarray, code: int, alpha: int = 215)
 def build_leaflet_map(
     class_array: np.ndarray,
     bounds: tuple[float, float, float, float],
-    geojson_obj: dict | None,
 ):
     west, south, east, north = bounds
     center = [(south + north) / 2, (west + east) / 2]
 
-    # Inisialisasi Peta Leaflet
     m = folium.Map(
         location=center,
         zoom_start=10,
@@ -241,10 +198,121 @@ def build_leaflet_map(
         prefer_canvas=True,
     )
 
-    # Basemap 1: Citra Satelit Esri (Aktif secara default)
+    # Injeksi CSS Modern langsung ke dalam Header Peta Leaflet agar kotak layer terlihat sangat rapi & estetik
+    custom_leaflet_css = folium.Element("""
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+      
+      /* Kotak Kontrol Layer Leaflet Elegan & Modern */
+      .leaflet-control-layers {
+        background: rgba(255, 255, 255, 0.96) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(203, 213, 225, 0.9) !important;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22), 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+        padding: 14px 18px !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        min-width: 260px !important;
+        color: #0f172a !important;
+      }
+      
+      /* Judul Bagian Basemap */
+      .leaflet-control-layers-base::before {
+        content: "BASEMAP SATELIT";
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #64748b;
+        margin-bottom: 8px;
+        padding-left: 4px;
+      }
+      
+      .leaflet-control-layers-base label {
+        display: flex !important;
+        align-items: center !important;
+        padding: 6px 10px !important;
+        border-radius: 8px !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        margin-bottom: 2px !important;
+      }
+      
+      .leaflet-control-layers-base label:hover {
+        background: #f1f5f9 !important;
+      }
+      
+      /* Garis Pemisah Antara Basemap dan Kelas */
+      .leaflet-control-layers-separator {
+        border-top: 1.5px solid #e2e8f0 !important;
+        margin: 12px 0 10px 0 !important;
+      }
+      
+      /* Judul Bagian Checklist Kelas */
+      .leaflet-control-layers-overlays::before {
+        content: "TAMPILKAN KELAS";
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #64748b;
+        margin-bottom: 8px;
+        padding-left: 4px;
+      }
+      
+      .leaflet-control-layers-overlays label {
+        display: flex !important;
+        align-items: center !important;
+        padding: 6px 10px !important;
+        border-radius: 8px !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        color: #0f172a !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        margin-bottom: 3px !important;
+      }
+      
+      .leaflet-control-layers-overlays label:hover {
+        background: #f1f5f9 !important;
+      }
+      
+      /* Desain Checklist Checkbox & Radio Button */
+      .leaflet-control-layers-selector {
+        width: 18px !important;
+        height: 18px !important;
+        margin-right: 12px !important;
+        cursor: pointer !important;
+        accent-color: #2563eb !important;
+      }
+      
+      /* Tombol Zoom Modern */
+      .leaflet-bar {
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+        border: 1px solid rgba(226, 232, 240, 0.9) !important;
+      }
+      .leaflet-bar a {
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #0f172a !important;
+        font-weight: bold !important;
+        width: 34px !important;
+        height: 34px !important;
+        line-height: 34px !important;
+      }
+    </style>
+    """)
+    m.get_root().header.add_child(custom_leaflet_css)
+
+    # Basemap 1: Citra Satelit Esri (Aktif default)
     folium.TileLayer(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Tiles © Esri — Sentinel-2 L2A BOA",
+        attr="Tiles © Esri",
         name="🛰️ Citra Satelit Esri",
         overlay=False,
         control=True,
@@ -276,96 +344,37 @@ def build_leaflet_map(
             name=layer_label,
             overlay=True,
             control=True,
-            show=True,  # Semua kelas dicentang secara default, bisa di-uncheck sesuka hati
+            show=True,
             interactive=False,
             pixelated=True,
         ).add_to(m)
 
-    # Tambahkan Layer Poligon Training GeoJSON (Default tidak dicentang)
-    if geojson_obj:
-        def style_feature(feature):
-            props = feature.get("properties") or {}
-            label = str(props.get("class", props.get("Class", ""))).strip().lower()
-            color = "#FFFFFF"
-            for item in CLASSES:
-                if label == item["name_en"].lower():
-                    color = item["color"]
-                    break
-            return {
-                "color": color,
-                "weight": 2.5,
-                "opacity": 1.0,
-                "fillColor": color,
-                "fillOpacity": 0.15,
-            }
-
-        folium.GeoJson(
-            geojson_obj,
-            name="📍 Poligon Training ROI (Digitasi)",
-            style_function=style_feature,
-            show=False,
-            tooltip=folium.GeoJsonTooltip(fields=["class"], aliases=["Kelas:"]) if any("class" in (f.get("properties") or {}) for f in geojson_obj.get("features", [])) else None,
-        ).add_to(m)
-
-    # Layer Control di pojok kanan atas (Terbuka permanen agar checklist langsung terlihat)
+    # Layer Control di pojok kanan atas (Terbuka permanen)
     folium.LayerControl(collapsed=False, position="topright").add_to(m)
     m.fit_bounds([[south, west], [north, east]])
     return m
 
 
 # ============================================================
-# PEMUATAN DATA
+# PEMUATAN DATA & TAMPILAN PETA LANGSUNG
 # ============================================================
 
 raster_path = get_local_raster()
-
-local_geojson_candidates = [
-    Path("training_jatim_mangrove_diperkecil_clean.geojson"),
-    Path(__file__).resolve().parent / "training_jatim_mangrove_diperkecil_clean.geojson",
-    Path(__file__).resolve().parent.parent / "training_jatim_mangrove_diperkecil_clean.geojson",
-]
-local_geojson = next((p for p in local_geojson_candidates if p.exists()), None)
-geojson_obj = None
-if local_geojson:
-    try:
-        geojson_obj = json.loads(local_geojson.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-
-
-# ============================================================
-# TAMPILAN ANTARMUKA UTAMA
-# ============================================================
-
-st.markdown(
-    """
-    <div class="header-box">
-      <div class="header-title">🗺️ Peta Klasifikasi Tutupan Lahan Jawa Timur</div>
-      <div class="header-subtitle">
-        Citra Satelit Sentinel-2 L2A & Algoritma Random Forest Classifier · Akurasi Uji: 92,76% · Wilayah Banyuwangi & Sekitarnya
-      </div>
-      <div class="instruction-pill">
-        👉 Gunakan kotak checklist di pojok kanan atas peta untuk mencentang / mematikan kelas (Sawah, Bangunan, Hutan, Mangrove, Air)
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 if raster_path and raster_path.exists():
     raster_bytes = raster_path.read_bytes()
     class_array, raster_bounds = read_raster_bytes(raster_bytes)
 
-    # Bangun dan render peta Leaflet interaktif
+    # Bangun peta Leaflet interaktif
     folium_map = build_leaflet_map(
         class_array=class_array,
         bounds=raster_bounds,
-        geojson_obj=geojson_obj,
     )
 
+    # Render peta layar penuh
     st_folium(
         folium_map,
-        height=720,
+        height=780,
         use_container_width=True,
         returned_objects=[],
         key="leaflet_classification_map",
