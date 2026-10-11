@@ -76,7 +76,7 @@
 | **Akurasi Model Uji** | **92,76%** (*Overall Accuracy* pada 152 piksel testing independen) |
 | **Raster Master Final** | `hasil_klasifikasi_jatim_FINAL.tif` (1.186.250 piksel, WGS 84) |
 | **Platform Diseminasi** | WebGIS Statis Interaktif (Leaflet.js) & Dashboard Analitik Python (Streamlit) |
-| **Status Live Demo Streamlit** | 🚀 [**Buka Dashboard Streamlit Publik**](URL_STREAMLIT_DEPLOYMENT) *(Ganti dengan URL Deploy Streamlit)* |
+| **Status Live Demo Streamlit** | 🚀 [**Buka Dashboard Streamlit Publik (Streamlit Cloud)**](https://utspsd-rvcxnt7h3agxnkbylm298z.streamlit.app/) |
 | **Status Live Demo WebGIS** | 🗺️ [**Buka WebGIS Leaflet Publik (GitHub Pages)**](https://aisya08.github.io/UTS_PSD/web/) |
 
 ---
@@ -441,9 +441,9 @@ flowchart LR
 > 🚀 **PINTASAN UTAMA EVALUASI DOSEN / PUBLIK (CLOUD DEPLOYMENT):**  
 > Agar dosen atau penilai dapat langsung membuka dan menguji aplikasi web secara daring tanpa perlu menjalankan server di laptop lokal:
 > 
-> - 🌐 **Dashboard Analitik Streamlit:** 👉 [**KLIK DI SINI UNTUK MEMBUKA STREAMLIT CLOUD**](URL_STREAMLIT_DEPLOYMENT)  
+> - 🌐 **Dashboard Analitik Streamlit Cloud:** 👉 [**KLIK DI SINI UNTUK MEMBUKA STREAMLIT CLOUD**](https://utspsd-rvcxnt7h3agxnkbylm298z.streamlit.app/)  
 > - 🗺️ **WebGIS Multi-Layer Leaflet.js (GitHub Pages):** 👉 [**KLIK DI SINI UNTUK MEMBUKA WEBGIS LEAFLET**](https://aisya08.github.io/UTS_PSD/web/)  
-> *(Catatan: Ganti teks `URL_STREAMLIT_DEPLOYMENT` dengan link hasil deploy Streamlit Cloud Anda).*
+> *(Status: Aplikasi Streamlit & GitHub Pages telah aktif online dan siap diuji oleh Dosen/Penguji).*
 
 ---
 
@@ -506,7 +506,7 @@ flowchart LR
    - Fasilitas ekspor data: tombol unduh tabel ringkasan format **CSV** dan tombol unduh berkas **GeoTIFF**.
 
 #### Status Akses Streamlit:
-- 🌐 **Tautan Daring Publik (Evaluasi Dosen):** 👉 [**Buka Streamlit Cloud**](URL_STREAMLIT_DEPLOYMENT)
+- 🌐 **Tautan Daring Publik (Evaluasi Dosen):** 👉 [**Buka Streamlit Cloud**](https://utspsd-rvcxnt7h3agxnkbylm298z.streamlit.app/)
 - 💻 **Pengujian Lokal Pengembang (Offline):**
   ```powershell
   python -m streamlit run web_klasifikasi_jatim/app.py
@@ -686,4 +686,4 @@ Akses di peramban pada alamat: `http://localhost:8501` *(Hanya dapat dibuka di l
   1. Salin seluruh isi berkas ini.
   2. Buka [HackMD.io](https://hackmd.io) dan buat catatan baru (*New note*).
   3. Tempel (*paste*) isi dokumen.
-  4. Ganti placeholder `URL_STREAMLIT_DEPLOYMENT` dan `URL_WEBGIS_DEPLOYMENT` dengan link deployment online Anda agar dosen dapat langsung mengevaluasi sistem tanpa menjalankan kode lokal.
+  4. Tautan deployment online ([Streamlit Cloud](https://utspsd-rvcxnt7h3agxnkbylm298z.streamlit.app/) dan [GitHub Pages](https://aisya08.github.io/UTS_PSD/web/)) telah terpasang penuh sehingga dosen dapat langsung mengevaluasi sistem tanpa menjalankan kode lokal.
