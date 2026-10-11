@@ -76,8 +76,8 @@
 | **Akurasi Model Uji** | **92,76%** (*Overall Accuracy* pada 152 piksel testing independen) |
 | **Raster Master Final** | `hasil_klasifikasi_jatim_FINAL.tif` (1.186.250 piksel, WGS 84) |
 | **Platform Diseminasi** | WebGIS Statis Interaktif (Leaflet.js) & Dashboard Analitik Python (Streamlit) |
-| **Status Live Demo Streamlit** | 🚀 [**Buka Dashboard Streamlit Publik**](URL_STREAMLIT_DEPLOYMENT) *(Ganti dengan URL Deploy)* |
-| **Status Live Demo WebGIS** | 🗺️ [**Buka WebGIS Leaflet Publik**](URL_WEBGIS_DEPLOYMENT) *(Ganti dengan URL Deploy)* |
+| **Status Live Demo Streamlit** | 🚀 [**Buka Dashboard Streamlit Publik**](URL_STREAMLIT_DEPLOYMENT) *(Ganti dengan URL Deploy Streamlit)* |
+| **Status Live Demo WebGIS** | 🗺️ [**Buka WebGIS Leaflet Publik (GitHub Pages)**](https://aisya08.github.io/UTS_PSD/web/) |
 
 ---
 
@@ -442,8 +442,8 @@ flowchart LR
 > Agar dosen atau penilai dapat langsung membuka dan menguji aplikasi web secara daring tanpa perlu menjalankan server di laptop lokal:
 > 
 > - 🌐 **Dashboard Analitik Streamlit:** 👉 [**KLIK DI SINI UNTUK MEMBUKA STREAMLIT CLOUD**](URL_STREAMLIT_DEPLOYMENT)  
-> - 🗺️ **WebGIS Multi-Layer Leaflet.js:** 👉 [**KLIK DI SINI UNTUK MEMBUKA WEBGIS LEAFLET**](URL_WEBGIS_DEPLOYMENT)  
-> *(Catatan: Ganti teks `URL_STREAMLIT_DEPLOYMENT` atau `URL_WEBGIS_DEPLOYMENT` dengan link hasil deploy publik).*
+> - 🗺️ **WebGIS Multi-Layer Leaflet.js (GitHub Pages):** 👉 [**KLIK DI SINI UNTUK MEMBUKA WEBGIS LEAFLET**](https://aisya08.github.io/UTS_PSD/web/)  
+> *(Catatan: Ganti teks `URL_STREAMLIT_DEPLOYMENT` dengan link hasil deploy Streamlit Cloud Anda).*
 
 ---
 
@@ -458,7 +458,7 @@ Di bawah ini adalah aplikasi WebGIS tutupan lahan yang disematkan langsung ke da
 
 <div style="position: relative; width: 100%; height: 740px; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 35px rgba(0,0,0,0.35); border: 1px solid #1e293b; margin: 24px 0;">
   <iframe 
-    src="URL_WEBGIS_DEPLOYMENT" 
+    src="https://aisya08.github.io/UTS_PSD/web/" 
     width="100%" 
     height="100%" 
     frameborder="0" 
